@@ -2,8 +2,8 @@ import 'server-only';
 import { z } from 'zod';
 
 const EnvSchema = z.object({
-  DATABASE_URL: z.string(),
-  DIRECT_URL: z.string().optional(),
+  DATABASE_URL: z.string().default('file:./prisma/dev.db'),
+  TURSO_AUTH_TOKEN: z.string().optional(),
   TRIPADVISOR_API_KEY: z.string().default(''),
   STRIPE_SECRET_KEY: z.string().default(''),
   STRIPE_WEBHOOK_SECRET: z.string().default(''),
