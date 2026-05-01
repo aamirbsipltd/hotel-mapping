@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Session {
+  id              String   @id @default(cuid())
+  uploadedAt      DateTime @default(now())
+  expiresAt       DateTime
+  isPaid          Boolean  @default(false)
+  stripeSessionId String?
+  byok            Boolean  @default(false)
+  byokKey         String?
+  rowsTotal       Int
+  rowsProcessed   Int      @default(0)
+  status          String   @default("queued")
+  errorMessage    String?
+  matches         Match[]
+
+  @@index([expiresAt])
+}
+
+model Match {
+  id                 String   @id @default(cuid())
+  sessionId          String
+  session            Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  rowIndex           Int
+  sourceId           String
+  sourceName         String
+  sourceCity         String?
+  sourceCountry      String?
+  sourceLat          Float?
+  sourceLng          Float?
+  sourceAddress      String?
+  sourcePhone        String?
+  status             String
+  candidatesJson     String?
+  selectedLocationId String?
+  selectedConfidence Float?
+  errorMessage       String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([sessionId, rowIndex])
+}
