@@ -94,3 +94,69 @@ model ReviewItem {
 
   @@index([runId, status])
 }
+
+// ── Region mapping ───────────────────────────────────────────────────────────
+// Country → Destination → Region hierarchy. GeoJSON polygons + precomputed
+// centroid/bbox live on Region so the in-memory rbush index does not have to
+// recompute them per run. polygon and bbox are stored as serialised JSON
+// strings (TEXT) — Prisma's Json column type isn't supported under the
+// libsql/SQLite adapter; the Postgres migration noted in memory will swap
+// these to Json/jsonb (and the production path swaps to PostGIS geometry,
+// see README §9).
+model Country {
+  id           String        @id @default(cuid())
+  code         String        @unique // ISO-3166-1 alpha-2: "AE", "ES"
+  name         String
+  destinations Destination[]
+}
+
+model Destination {
+  id        String   @id @default(cuid())
+  countryId String
+  country   Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  name      String
+  slug      String   @unique
+  regions   Region[]
+
+  @@index([countryId])
+}
+
+model Region {
+  id            String             @id @default(cuid())
+  destinationId String
+  destination   Destination        @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  name          String
+  slug          String             @unique
+  polygon       String             // GeoJSON Polygon/MultiPolygon, serialised
+  centroidLat   Float
+  centroidLng   Float
+  bbox          String             // serialised [minLng,minLat,maxLng,maxLat]
+  source        String             // SEED | OSM | MANUAL
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  assignments   RegionAssignment[]
+
+  @@index([destinationId])
+}
+
+// One current assignment per hotelKey. method=MANUAL or isOverride=true means
+// batch assignment skips the row — manual decisions survive re-runs.
+model RegionAssignment {
+  id                 String   @id @default(cuid())
+  hotelKey           String   @unique
+  regionId           String?
+  region             Region?  @relation(fields: [regionId], references: [id], onDelete: SetNull)
+  method             String   // AUTO | MANUAL | UNASSIGNED
+  isOverride         Boolean  @default(false)
+  confidence         Float?
+  candidateRegionIds String?  // serialised JSON array of regionId strings
+  assignedAt         DateTime @default(now())
+
+  @@index([regionId])
+}
+
+model AssignmentRun {
+  id        String   @id @default(cuid())
+  stats     String   // serialised JSON: { total, auto, manualPreserved, review, unassigned }
+  createdAt DateTime @default(now())
+}
