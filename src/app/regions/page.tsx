@@ -69,11 +69,19 @@ export default function RegionsPage() {
         </p>
       </section>
 
-      <section className="mx-auto max-w-5xl px-4 pb-6">
+      <section className="mx-auto max-w-5xl px-4 pb-6 space-y-4">
         <div className="grid grid-cols-3 gap-3 text-center">
           <Stat label="Countries seeded" value={totalCountries} />
           <Stat label="Destinations" value={totalDestinations} />
           <Stat label="Regions" value={totalRegions} />
+        </div>
+        <div className="flex justify-center">
+          <Link
+            href="/regions/admin"
+            className={cn(buttonVariants({ size: 'lg' }), 'gap-2')}
+          >
+            Open region admin <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </section>
 
