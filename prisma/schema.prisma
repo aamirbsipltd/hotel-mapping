@@ -47,3 +47,50 @@ model Match {
 
   @@index([sessionId, rowIndex])
 }
+
+// ── FastX amenities classifier ───────────────────────────────────────────────
+// Learned mapping dictionary. Each row is a stable supplier-side identifier
+// (Travelgate canonical code, GIATA code, or a normalised text token) bound
+// to one of the canonical category IDs in src/fastx/taxonomy.ts. The seed
+// rows are inserted at build/dev time; review-queue decisions append further
+// rows so the dictionary compounds across runs and suppliers.
+model AmenityMapping {
+  id         String   @id @default(cuid())
+  key        String   @unique
+  keyType    String   // TGX | GIATA | SUPPLIER | TEXT
+  categoryId String
+  source     String   // SEED | REVIEW
+  createdAt  DateTime @default(now())
+
+  @@index([categoryId])
+}
+
+model ClassificationRun {
+  id         String       @id @default(cuid())
+  hotelCode  String
+  hotelName  String?
+  stats      String       // serialised JSON: { total, auto, review, excluded, autoRate }
+  createdAt  DateTime     @default(now())
+  reviewItems ReviewItem[]
+
+  @@index([hotelCode])
+}
+
+model ReviewItem {
+  id                   String   @id @default(cuid())
+  runId                String
+  run                  ClassificationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  rawText              String
+  sourceField          String   // amenity | cardTypes | poi
+  suggestedCategoryId  String?
+  resolvedCategoryId   String?
+  confidence           Float
+  method               String   // exact | fuzzy | none
+  status               String   @default("PENDING") // PENDING | RESOLVED
+  mappingKey           String?  // populated on resolve so re-runs hit the exact-map stage
+  mappingKeyType       String?
+  createdAt            DateTime @default(now())
+  resolvedAt           DateTime?
+
+  @@index([runId, status])
+}
