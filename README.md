@@ -101,3 +101,37 @@ Ratings and review counts are displayed using Tripadvisor's own bubble-rating im
 Deployed on Vercel. The `vercel-build` script runs `prisma generate && next build`.
 
 Set all environment variables in the Vercel project settings before deploying.
+
+---
+
+## Region mapping — production storage path
+
+The default region-assignment engine uses pure JS (`turf` + `rbush`) and
+stores polygons as serialised GeoJSON in a TEXT column. That's portable
+(SQLite dev, Postgres prod, browser) and good enough for tens of
+thousands of hotels against a few hundred regions. It also keeps the
+demo and CI dependency-free.
+
+The scale-up path, for when inventory volume or region count grows:
+
+| Default (built) | Scale path (documented) |
+|---|---|
+| `polygon TEXT` (serialised GeoJSON) | `polygon geometry(MultiPolygon, 4326)` |
+| `bbox TEXT` (serialised `[minLng,minLat,maxLng,maxLat]`) | GIST spatial index on `polygon` |
+| `turf.booleanPointInPolygon` | `ST_Contains(polygon, ST_MakePoint(lng, lat))` |
+| `haversineKm` against centroid for fallback | `ST_DWithin(polygon, point, radius_metres)` |
+
+Notes on the migration:
+
+- This is **the same Postgres migration** owed for the FastX and matcher
+  modules — column-type changes for the region polygons land alongside
+  the broader `db push` → `prisma migrate deploy` cut-over and the
+  `DIRECT_URL` wiring.
+- The portable engine is the default; PostGIS is the bigger-data
+  acceleration, not a replacement. Region create/edit, point-in-polygon
+  routing, and the four engine guards all remain logically the same;
+  only the storage and query primitives change.
+- OSM imports go through `@turf/simplify` on the way in
+  (`scripts/osm-region-import.ts`) so the polygons stay small enough
+  that the JS engine remains viable longer than naïve geometry would
+  suggest.
