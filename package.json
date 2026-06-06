@@ -8,7 +8,7 @@
     "vercel-build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --conditions=react-server --import tsx --test --test-concurrency=1 src/lib/matching/score.test.ts src/fastx/classify/classify.test.ts src/fastx/service/service.test.ts src/fastx/demo/demo.test.ts src/regions/seed/seed.test.ts src/regions/assign/assign.test.ts src/regions/service/service.test.ts src/regions/demo/demo.test.ts src/regions/osm/overpass-to-region.test.ts src/regions/reverse-geo/reverse-geo.test.ts src/platform/platform.test.ts src/platform/ui/labels.test.ts src/platform/ui/prepare-page.test.ts",
+    "test": "node --conditions=react-server --import tsx --test --test-concurrency=1 src/lib/matching/score.test.ts src/fastx/classify/classify.test.ts src/fastx/service/service.test.ts src/fastx/demo/demo.test.ts src/regions/seed/seed.test.ts src/regions/assign/assign.test.ts src/regions/service/service.test.ts src/regions/demo/demo.test.ts src/regions/osm/overpass-to-region.test.ts src/regions/reverse-geo/reverse-geo.test.ts src/platform/platform.test.ts src/platform/ui/labels.test.ts src/platform/ui/prepare-page.test.ts src/marketing/copy.test.ts",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "smoke": "tsx scripts/smoke-test.ts",
