@@ -5,17 +5,20 @@ import { cn } from '@/lib/utils';
 import { SEED_COUNTRIES } from '@/regions/seed/countries';
 import { SEED_DESTINATIONS } from '@/regions/seed/destinations';
 import { SEED_REGIONS } from '@/regions/seed/regions';
+import { getDemoResult } from '@/regions/demo/compute';
+import { BeforeAfterHero } from '@/regions/demo/before-after-hero';
 
 export const metadata = {
   title: 'Region Mapping — Hotel Mapping Tool',
   description:
-    'Assign hotels to curated regions by point-in-polygon. Admin map for drawing and refining polygons. Region-based search.',
+    'Assign hotels to curated regions by point-in-polygon. Admin map for drawing and refining polygons. Region-based search by Dubai Marina, JBR, Palm Jumeirah, not just "Dubai".',
 };
 
 type DestinationView = {
   slug: string;
   name: string;
   regionCount: number;
+  hotelCount: number;
 };
 
 type CountryView = {
@@ -24,7 +27,7 @@ type CountryView = {
   destinations: DestinationView[];
 };
 
-function buildView(): CountryView[] {
+function buildView(hotelsByDestination: Map<string, number>): CountryView[] {
   const regionCountBy = new Map<string, number>();
   for (const r of SEED_REGIONS) {
     regionCountBy.set(r.destinationSlug, (regionCountBy.get(r.destinationSlug) ?? 0) + 1);
@@ -36,6 +39,7 @@ function buildView(): CountryView[] {
       slug: d.slug,
       name: d.name,
       regionCount: regionCountBy.get(d.slug) ?? 0,
+      hotelCount: hotelsByDestination.get(d.slug) ?? 0,
     });
     destByCountry.set(d.countryCode, list);
   }
@@ -47,7 +51,16 @@ function buildView(): CountryView[] {
 }
 
 export default function RegionsPage() {
-  const view = buildView();
+  const { hotels, result } = getDemoResult();
+  const hotelsByDestination = new Map<string, number>();
+  for (const h of hotels) {
+    if (!h.currentDestinationSlug) continue;
+    hotelsByDestination.set(
+      h.currentDestinationSlug,
+      (hotelsByDestination.get(h.currentDestinationSlug) ?? 0) + 1,
+    );
+  }
+  const view = buildView(hotelsByDestination);
   const totalRegions = SEED_REGIONS.length;
   const totalDestinations = SEED_DESTINATIONS.length;
   const totalCountries = SEED_COUNTRIES.length;
@@ -64,9 +77,13 @@ export default function RegionsPage() {
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
           Curated region polygons you own. Point-in-polygon assignment.
-          Overlap and offshore hotels route to a review queue. The admin
-          map draws new regions and overrides individual hotels.
+          Overlap and offshore hotels route to a review queue. Search by
+          Dubai Marina, JBR, Palm Jumeirah — not just &ldquo;Dubai.&rdquo;
         </p>
+      </section>
+
+      <section className="mx-auto max-w-5xl px-4 pb-16">
+        <BeforeAfterHero destinationSlug="dubai" />
       </section>
 
       <section className="mx-auto max-w-5xl px-4 pb-6 space-y-4">
@@ -86,12 +103,20 @@ export default function RegionsPage() {
       </section>
 
       <section className="mx-auto max-w-5xl px-4 pb-20 space-y-8">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold text-foreground">Browse</h2>
+          <p className="text-sm text-muted-foreground">
+            Country → Destination → Region. Drill into a region to see the
+            hotels it contains.
+          </p>
+        </div>
+
         {view.map((country) => (
           <div key={country.code} className="space-y-3">
             <div className="flex items-baseline gap-2">
-              <h2 className="text-lg font-semibold text-foreground">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 {country.name}
-              </h2>
+              </h3>
               <span className="text-xs font-mono text-muted-foreground">
                 {country.code}
               </span>
@@ -105,7 +130,7 @@ export default function RegionsPage() {
                   <div className="space-y-1">
                     <p className="font-semibold text-foreground">{d.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {d.regionCount} region{d.regionCount === 1 ? '' : 's'} seeded
+                      {d.regionCount} region{d.regionCount === 1 ? '' : 's'} · {d.hotelCount} hotel{d.hotelCount === 1 ? '' : 's'} on file
                     </p>
                   </div>
                   <div className="mt-auto">
@@ -126,9 +151,7 @@ export default function RegionsPage() {
         ))}
 
         <p className="text-xs text-muted-foreground">
-          Seed polygons are approximate hand-authored starting points — the
-          admin map and the OSM import utility refine them. Engine, admin
-          workbench, and region-filtered search land in the next phases.
+          Engine output: {result.stats.auto} auto-assigned · {result.stats.review} review · {result.stats.unassigned} unassigned · {(result.stats.autoRate * 100).toFixed(1)}% auto-rate. Seed polygons are approximate hand-authored starting points; the admin map refines them.
         </p>
       </section>
     </div>
