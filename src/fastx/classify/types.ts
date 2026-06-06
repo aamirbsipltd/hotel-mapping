@@ -48,12 +48,27 @@ export type AmenityItem = {
   routing: Routing;
 };
 
+// Five disjoint buckets — every triaged RawItem terminates in exactly one.
+// Invariant: total === auto + review + payment + nearby + excluded.
+//
+// `payment` (re-homed cardTypes) and `nearby` (re-homed POI strings) are
+// not amenities — calling them "excluded" hides the field-conflation
+// fix that's the whole point of Stage 0 triage. Reserve `excluded` for
+// genuine junk (numeric tokens, supplier-code patterns, empty rows).
+//
+// Auto-rate denominator is the genuine amenity pipeline only:
+// autoRate = auto / (auto + review). Items routed at triage to payment
+// or nearby never entered the classification pipeline, and dropped
+// metadata isn't an amenity — none of them belong in the denominator.
 export type ClassifyStats = {
   total: number;
   auto: number;
   review: number;
+  payment: number;
+  nearby: number;
   excluded: number;
-  autoRate: number; // auto / (auto + review + excluded), 0..1
+  autoRate: number;          // auto / (auto + review)
+  autoRateDenominator: number; // auto + review — surfaced so the UI can state it
 };
 
 export type ClassifyResult = {

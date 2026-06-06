@@ -69,7 +69,8 @@ model ClassificationRun {
   id         String       @id @default(cuid())
   hotelCode  String
   hotelName  String?
-  stats      String       // serialised JSON: { total, auto, review, excluded, autoRate }
+  stats      String       // serialised JSON: { total, auto, review, payment, nearby, excluded, autoRate, autoRateDenominator }
+  result     String       // serialised JSON: ClassifyResult — the full categorised result snapshot at run-create time
   createdAt  DateTime     @default(now())
   reviewItems ReviewItem[]
 

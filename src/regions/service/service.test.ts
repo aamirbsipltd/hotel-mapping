@@ -37,8 +37,10 @@ describe('runAssignAll — DB round-trip', () => {
   });
 
   after(async () => {
+    // Do not call prisma.$disconnect() — the Prisma client is a singleton
+    // shared with other service tests in this run. Disconnecting here
+    // would close the connection out from under the next suite.
     await resetRegionTables();
-    await prisma.$disconnect();
   });
 
   test('first run writes engine assignments only — no MANUAL rows produced', async () => {

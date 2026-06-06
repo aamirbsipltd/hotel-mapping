@@ -185,9 +185,47 @@ describe('classifyHotel — pipeline shape', () => {
   test('stats.total equals the count of all triaged items', () => {
     const r = classifyHotel(dubaiHotel);
     assert.equal(r.stats.total, r.all.length);
-    assert.equal(
-      r.all.length,
-      r.stats.auto + r.stats.review + r.stats.excluded,
+  });
+
+  test('hard invariant: total === auto + review + payment + nearby + excluded', () => {
+    for (const fixture of [dubaiHotel, baselHotel]) {
+      const r = classifyHotel(fixture);
+      const counted =
+        r.stats.auto + r.stats.review + r.stats.payment + r.stats.nearby + r.stats.excluded;
+      assert.equal(
+        r.stats.total,
+        counted,
+        `${fixture.hotelCode}: total=${r.stats.total} ≠ ${counted} (auto=${r.stats.auto}, review=${r.stats.review}, payment=${r.stats.payment}, nearby=${r.stats.nearby}, excluded=${r.stats.excluded})`,
+      );
+    }
+  });
+
+  test('payment, nearby, and excluded are three distinct counts (relocations are not discards)', () => {
+    const r = classifyHotel(dubaiHotel);
+    // Dubai fixture: 4 cardTypes → payment, 1 POI description → nearby,
+    // 2 genuine-junk metadata rows → excluded.
+    assert.equal(r.stats.payment, 4);
+    assert.equal(r.stats.nearby, 1);
+    assert.equal(r.stats.excluded, 2);
+    // And the arrays match the counts.
+    assert.equal(r.payment.length, r.stats.payment);
+    assert.equal(r.nearby.length, r.stats.nearby);
+    assert.equal(r.excluded.length, r.stats.excluded);
+  });
+
+  test('autoRate is auto/(auto+review), with the denominator surfaced', () => {
+    const r = classifyHotel(dubaiHotel);
+    const denom = r.stats.auto + r.stats.review;
+    assert.equal(r.stats.autoRateDenominator, denom);
+    assert.ok(
+      Math.abs(r.stats.autoRate - r.stats.auto / denom) < 1e-9,
+      `expected ${r.stats.auto}/${denom}, got ${r.stats.autoRate}`,
+    );
+    // Headline assertion: with the corrected denominator the Dubai
+    // fixture's auto-rate is well above 90% — not the deflated 71%.
+    assert.ok(
+      r.stats.autoRate > 0.9,
+      `expected >90%, got ${r.stats.autoRate}`,
     );
   });
 

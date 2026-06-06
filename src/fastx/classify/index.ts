@@ -158,13 +158,30 @@ function assemble(classified: ClassifiedItem[]): ClassifyResult {
   }
 
   const auto = ORDERED_CATEGORY_IDS.reduce((n, id) => n + categories[id].length, 0);
+  const reviewCount = review.length;
+  const paymentCount = payment.length;
+  const nearbyCount = nearby.length;
+  const excludedCount = excluded.length;
+  const autoRateDenominator = auto + reviewCount;
   const stats: ClassifyStats = {
     total: classified.length,
     auto,
-    review: review.length,
-    excluded: payment.length + nearby.length + excluded.length,
-    autoRate: classified.length === 0 ? 0 : auto / classified.length,
+    review: reviewCount,
+    payment: paymentCount,
+    nearby: nearbyCount,
+    excluded: excludedCount,
+    autoRate: autoRateDenominator === 0 ? 0 : auto / autoRateDenominator,
+    autoRateDenominator,
   };
+
+  // Hard invariant — assert at compute time so the bug surfaces in tests
+  // and in the workbench rather than as a quietly wrong stats panel.
+  const counted = auto + reviewCount + paymentCount + nearbyCount + excludedCount;
+  if (counted !== classified.length) {
+    throw new Error(
+      `classifyHotel: stats invariant violated — total=${classified.length} ≠ auto(${auto}) + review(${reviewCount}) + payment(${paymentCount}) + nearby(${nearbyCount}) + excluded(${excludedCount}) = ${counted}`,
+    );
+  }
 
   return { categories, payment, nearby, excluded, review, all, stats };
 }
