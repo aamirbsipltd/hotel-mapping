@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "static.tacdn.com" },
+      { protocol: "https", hostname: "www.tripadvisor.com" },
       { protocol: "https", hostname: "media-cdn.tripadvisor.com" },
       { protocol: "https", hostname: "media-cdn.tripadvisor.com", pathname: "/**" },
     ],

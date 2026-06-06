@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { COMPLIANCE } from '@/lib/tripadvisor/compliance';
 
 export function SiteFooter() {
   return (
@@ -27,10 +28,10 @@ export function SiteFooter() {
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Powered by</span>
             <Image
-              src="https://static.tacdn.com/img2/branding/tripadvisor_logo_115x18.png"
+              src={COMPLIANCE.REQUIRED_LOGO_URL}
               alt="Tripadvisor"
-              width={115}
-              height={18}
+              width={COMPLIANCE.REQUIRED_LOGO_WIDTH}
+              height={COMPLIANCE.REQUIRED_LOGO_HEIGHT}
               unoptimized
             />
             <span className="text-xs text-muted-foreground">Content API</span>
