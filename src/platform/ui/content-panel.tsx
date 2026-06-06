@@ -15,18 +15,24 @@ import { PLATFORM_LABELS, pick, behaviourHeadline, reconciliationLine, type Loca
 type Props = {
   view: FacilitiesView;
   counts: ContentCounts;
+  beat: string;
   locale: Locale;
 };
 
-export default function ContentPanel({ view, counts, locale }: Props) {
+export default function ContentPanel({ view, counts, beat, locale }: Props) {
   return (
     <div className="rounded-lg border border-border bg-background overflow-hidden">
-      <header className="px-4 py-3 border-b border-emerald-100 bg-emerald-50/40">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          {pick(PLATFORM_LABELS.panel.content, locale)}
-        </p>
-        <p className="text-xs text-muted-foreground leading-snug">
-          {pick(PLATFORM_LABELS.contentBanner.sub, locale)}
+      <header className="px-4 py-3 border-b border-emerald-100 bg-emerald-50/40 space-y-2">
+        <div className="flex flex-col gap-1">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {pick(PLATFORM_LABELS.panel.content, locale)}
+          </p>
+          <p className="text-xs text-emerald-900/80 leading-snug">{beat}</p>
+        </div>
+        {/* §A3 — lead with the business outcome; the mechanics live in
+            the reconciliation banner at the foot. */}
+        <p className="text-sm font-semibold text-emerald-900 leading-snug">
+          {pick(PLATFORM_LABELS.contentBanner.outcomeLead, locale)}
         </p>
       </header>
 

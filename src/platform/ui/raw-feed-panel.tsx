@@ -33,14 +33,15 @@ export default function RawFeedPanel({
   const L = PLATFORM_LABELS.rawSection;
   return (
     <div className="rounded-lg border border-border bg-background overflow-hidden flex flex-col">
-      <div className="px-4 py-3 border-b border-border bg-muted/30">
+      <div className="px-4 py-3 border-b border-border bg-muted/30 space-y-1">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           {pick(PLATFORM_LABELS.panel.raw, locale)}
         </p>
         <p className="text-xs text-muted-foreground leading-snug">
-          {locale === 'en'
-            ? 'Everything in one undifferentiated payload — the way the supplier hands it to you today.'
-            : 'Alles in einer einzigen Lieferung — so, wie der Lieferant es heute übergibt.'}
+          {pick(PLATFORM_LABELS.rawSubtitle, locale)}
+        </p>
+        <p className="text-xs text-muted-foreground/80 italic leading-snug">
+          {pick(PLATFORM_LABELS.beat.raw, locale)}
         </p>
       </div>
       <div className="p-4 space-y-4 flex-1">

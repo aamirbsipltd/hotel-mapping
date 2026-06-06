@@ -13,19 +13,23 @@ import type { PlatformMatch } from '../orchestrate';
 
 type Props = {
   match: PlatformMatch;
+  beat: string;
   locale: Locale;
 };
 
-export default function MatchPanel({ match, locale }: Props) {
+export default function MatchPanel({ match, beat, locale }: Props) {
   const L = PLATFORM_LABELS.matchField;
   const phrase = pick(PLATFORM_LABELS.classificationPhrase[match.classification], locale);
   return (
     <div className="rounded-lg border border-border bg-background overflow-hidden">
-      <header className="px-4 py-3 border-b border-emerald-100 bg-emerald-50/40 flex items-baseline justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          {pick(PLATFORM_LABELS.panel.match, locale)}
-        </p>
-        <ClassificationBadge classification={match.classification} phrase={phrase} />
+      <header className="px-4 py-3 border-b border-emerald-100 bg-emerald-50/40 space-y-1">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {pick(PLATFORM_LABELS.panel.match, locale)}
+          </p>
+          <ClassificationBadge classification={match.classification} phrase={phrase} />
+        </div>
+        <p className="text-xs text-emerald-900/80 leading-snug">{beat}</p>
       </header>
 
       <div className="p-4 space-y-4">

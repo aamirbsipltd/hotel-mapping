@@ -9,13 +9,29 @@
 //
 // Pure render of the prepared page view — no fetch, no recompute, no
 // state beyond `locale`.
+//
+// Self-narration discipline (§A1 of the Phase 1 addendum): this page is
+// viewed asynchronously, as a link in a client email, with no one
+// narrating. Every panel carries a beat caption, the scorecard at the
+// top tells the story in one glance, and the foot carries the honesty
+// note. The page is its own presenter.
 
 import { useState } from 'react';
-import { PLATFORM_LABELS, pick, type Locale } from './labels';
+import { Sparkles } from 'lucide-react';
+import {
+  PLATFORM_LABELS,
+  contentBeat,
+  locationBeat,
+  matchBeat,
+  pick,
+  scorecardFromView,
+  type Locale,
+} from './labels';
 import RawFeedPanel from './raw-feed-panel';
 import MatchPanel from './match-panel';
 import LocationPanel from './location-panel';
 import ContentPanel from './content-panel';
+import Scorecard from './scorecard';
 import type { PlatformPageView } from './prepare-page';
 
 const LOCALE_LABEL: Record<Locale, string> = { en: 'EN', de: 'DE' };
@@ -25,6 +41,15 @@ type Props = { page: PlatformPageView };
 export default function PlatformWalkthrough({ page }: Props) {
   const [locale, setLocale] = useState<Locale>('en');
   const { view, rawList } = page;
+
+  // Engine-derived per-panel beats and scorecard data — same source as
+  // every other number on the page.
+  const scorecard = scorecardFromView(view);
+  const beats = {
+    match: matchBeat(view, locale),
+    location: locationBeat(view, locale),
+    content: contentBeat(view, locale),
+  };
 
   return (
     <div className="space-y-8">
@@ -41,9 +66,9 @@ export default function PlatformWalkthrough({ page }: Props) {
           </div>
           <LocaleToggle locale={locale} setLocale={setLocale} />
         </div>
-        <p className="text-xs text-muted-foreground italic">
-          {pick(PLATFORM_LABELS.poweredBy, locale)}
-        </p>
+
+        {/* §A1 — one-glance scorecard for the skimmer who won't scroll. */}
+        <Scorecard data={scorecard} locale={locale} />
 
         <div className="rounded-md border border-border bg-muted/30 px-4 py-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <span className="text-sm font-medium text-foreground">{view.hotel.name}</span>
@@ -63,8 +88,8 @@ export default function PlatformWalkthrough({ page }: Props) {
           locale={locale}
         />
         <div className="space-y-4">
-          <MatchPanel match={view.match} locale={locale} />
-          <LocationPanel location={view.location} locale={locale} />
+          <MatchPanel match={view.match} beat={beats.match} locale={locale} />
+          <LocationPanel location={view.location} beat={beats.location} locale={locale} />
         </div>
       </div>
 
@@ -79,9 +104,37 @@ export default function PlatformWalkthrough({ page }: Props) {
           nearby: view.content.stats.nearby,
           excluded: view.content.stats.excluded,
         }}
+        beat={beats.content}
         locale={locale}
       />
+
+      {/* §A4 — learning loop callout. Done-for-you differentiator
+          surfaced in plain language. */}
+      <LearningCallout locale={locale} />
+
+      {/* §A5 — honesty note at the foot. */}
+      <footer className="pt-4 border-t border-border">
+        <p className="text-xs text-muted-foreground italic leading-snug">
+          {pick(PLATFORM_LABELS.honesty, locale)}
+        </p>
+      </footer>
     </div>
+  );
+}
+
+function LearningCallout({ locale }: { locale: Locale }) {
+  return (
+    <aside className="rounded-lg border border-amber-200 bg-amber-50/40 p-4 flex gap-3">
+      <Sparkles className="size-5 text-amber-700 shrink-0 mt-0.5" />
+      <div className="space-y-1 min-w-0">
+        <p className="text-sm font-semibold text-amber-900">
+          {pick(PLATFORM_LABELS.learning.title, locale)}
+        </p>
+        <p className="text-xs text-amber-900/80 leading-snug">
+          {pick(PLATFORM_LABELS.learning.body, locale)}
+        </p>
+      </div>
+    </aside>
   );
 }
 

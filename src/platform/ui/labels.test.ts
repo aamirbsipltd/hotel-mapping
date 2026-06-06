@@ -1,6 +1,16 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { PLATFORM_LABELS, behaviourHeadline, reconciliationLine, type BiText } from './labels';
+import {
+  PLATFORM_LABELS,
+  behaviourHeadline,
+  reconciliationLine,
+  matchBeat,
+  locationBeat,
+  contentBeat,
+  scorecardFromView,
+  type BiText,
+} from './labels';
+import { orchestrateCanonical } from '../orchestrate';
 
 function isBiText(x: unknown): x is BiText {
   if (!x || typeof x !== 'object') return false;
@@ -56,33 +66,79 @@ describe('PLATFORM_LABELS — bilingual completeness', () => {
 });
 
 // ── Done-for-you copy guard — automated check, complementary to the
-// human browser pass. Catches anyone adding self-serve affordances to
-// the page chrome copy in this file. The page-level scan over rendered
-// JSX would need a browser; this asserts the *source of truth* for the
-// platform's own strings.
-describe('done-for-you copy — no self-serve affordances in the platform label set', () => {
-  test('headline and subcopy contain no signup / login / upload / "get started" affordances', () => {
-    const banned = [
-      /sign\s*up/i,
-      /\blog\s*in\b/i,
-      /create\s+account/i,
-      /upload\s+your/i,
-      /start\s+free/i,
-      /get\s+started/i,
-      /try\s+it\s+free/i,
-    ];
-    const surfaces = [
-      PLATFORM_LABELS.headline.en,
-      PLATFORM_LABELS.headline.de,
-      PLATFORM_LABELS.subcopy.en,
-      PLATFORM_LABELS.subcopy.de,
-      PLATFORM_LABELS.poweredBy.en,
-      PLATFORM_LABELS.poweredBy.de,
-    ];
-    for (const s of surfaces) {
-      for (const re of banned) {
-        assert.ok(!re.test(s), `self-serve phrase ${re} appears in: "${s}"`);
+// human browser pass. Scans the entire bilingual label set plus every
+// dynamic beat so a future addition cannot smuggle in self-serve copy
+// that the test misses by being scoped only to the header.
+const BANNED_SELFSERVE = [
+  /sign\s*up/i,
+  /\blog\s*in\b/i,
+  /create\s+account/i,
+  /upload\s+your/i,
+  /start\s+free/i,
+  /get\s+started/i,
+  /try\s+it\s+free/i,
+];
+
+describe('done-for-you copy — no self-serve affordances anywhere on /platform', () => {
+  test('every BiText leaf in PLATFORM_LABELS is self-serve-free in both locales', () => {
+    for (const { path, text } of walkBiTexts(PLATFORM_LABELS)) {
+      for (const re of BANNED_SELFSERVE) {
+        assert.ok(!re.test(text.en), `${path}.en matches ${re}: "${text.en}"`);
+        assert.ok(!re.test(text.de), `${path}.de matches ${re}: "${text.de}"`);
       }
     }
+  });
+
+  test('every dynamic beat (Match / Location / Content) is self-serve-free in both locales', () => {
+    const view = orchestrateCanonical();
+    const beats = [
+      matchBeat(view, 'en'),
+      matchBeat(view, 'de'),
+      locationBeat(view, 'en'),
+      locationBeat(view, 'de'),
+      contentBeat(view, 'en'),
+      contentBeat(view, 'de'),
+    ];
+    for (const text of beats) {
+      assert.ok(text && text.trim().length > 0, `beat is empty: "${text}"`);
+      for (const re of BANNED_SELFSERVE) {
+        assert.ok(!re.test(text), `beat matches ${re}: "${text}"`);
+      }
+    }
+  });
+});
+
+describe('dynamic beats — engine-derived, bilingual, woven through the view', () => {
+  test('matchBeat weaves rating and review count from the orchestrated view, in both locales', () => {
+    const view = orchestrateCanonical();
+    const en = matchBeat(view, 'en');
+    const de = matchBeat(view, 'de');
+    // Engine derived — rating + review count appear, in both locales,
+    // localised number formatting.
+    assert.match(en, /4\.6★/);
+    assert.match(en, /2,843 reviews/);
+    assert.match(de, /4,6★/);
+    assert.match(de, /2\.843 Rezensionen/);
+  });
+
+  test('locationBeat weaves destination + region from the view', () => {
+    const view = orchestrateCanonical();
+    const en = locationBeat(view, 'en');
+    assert.ok(en.includes('Dubai'));
+    assert.ok(en.includes('Dubai Marina'));
+  });
+
+  test('contentBeat weaves the engine total (28) from the view', () => {
+    const view = orchestrateCanonical();
+    assert.match(contentBeat(view, 'en'), /28 mixed attributes/);
+    assert.match(contentBeat(view, 'de'), /28 vermischte Attribute/);
+  });
+
+  test('scorecard data is engine-derived: matched=true, region=Dubai Marina, misclassified=0', () => {
+    const view = orchestrateCanonical();
+    const s = scorecardFromView(view);
+    assert.equal(s.matched, true);
+    assert.equal(s.regionName, 'Dubai Marina');
+    assert.equal(s.misclassified, 0);
   });
 });
