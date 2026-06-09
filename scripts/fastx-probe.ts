@@ -98,13 +98,18 @@ async function fetchHotels(
   apiKey: string,
   accessId: string,
   hotelCodes: string[],
+  client?: string,
+  context?: string,
 ): Promise<GraphQLResponse> {
   const res = await fetch(HOTELX_GRAPHQL_URL, {
     method: 'POST',
-    headers: buildAuthHeaders(apiKey),
+    headers: buildAuthHeaders(apiKey, { client, context }),
     body: JSON.stringify({
       query: HOTEL_CONTENT_QUERY,
-      variables: buildHotelContentVariables({ apiKey, accessId }, hotelCodes),
+      variables: buildHotelContentVariables(
+        { apiKey, accessId, client, context },
+        hotelCodes,
+      ),
     }),
   });
   const text = await res.text();
@@ -150,6 +155,8 @@ async function main() {
 
   const apiKey = process.env.TRAVELGATE_API_KEY;
   const accessId = process.env.TRAVELGATE_ACCESS_ID;
+  const client = process.env.TRAVELGATE_CLIENT;
+  const context = process.env.TRAVELGATE_CONTEXT;
 
   if (!apiKey || !accessId) {
     console.log('TRAVELGATE_API_KEY or TRAVELGATE_ACCESS_ID is not set.');
@@ -159,11 +166,17 @@ async function main() {
     return;
   }
 
-  console.log(`Querying ${HOTELX_GRAPHQL_URL} for ${codes.length} hotel code(s)…`);
+  console.log(
+    `Querying ${HOTELX_GRAPHQL_URL} for ${codes.length} hotel code(s)` +
+      ` · access=${accessId}` +
+      (context ? ` · context=${context}` : '') +
+      (client ? ` · client=${client}` : '') +
+      ` …`,
+  );
 
   let res: GraphQLResponse;
   try {
-    res = await fetchHotels(apiKey, accessId, codes);
+    res = await fetchHotels(apiKey, accessId, codes, client, context);
   } catch (err) {
     console.error('Probe failed:', err instanceof Error ? err.message : String(err));
     process.exitCode = 1;
